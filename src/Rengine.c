@@ -447,6 +447,13 @@ JNIEXPORT jstring JNICALL Java_org_rosuda_JRI_Rengine_rniGetSymbolName
 	return jri_putSymbolName(env, L2SEXP(exp));
 }
 
+
+JNIEXPORT jobjectArray JNICALL Java_org_rosuda_JRI_Rengine_rniGetComplexNumberArray
+(JNIEnv *env, jobject this, jlong exp)
+{
+    return jri_putComplexNumberArray(env, L2SEXP(exp));
+}
+
 JNIEXPORT jboolean JNICALL Java_org_rosuda_JRI_Rengine_rniInherits
 (JNIEnv *env, jobject this, jlong exp, jstring s)
 {

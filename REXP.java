@@ -37,6 +37,9 @@ public class REXP {
 	/** xpression type: RList */
 	public static final int XT_LIST = 17;
 	
+	/** xpression type: RComplexNumber */
+	public static final int XT_COMPLEX = 100;
+	
 	/**
 	 * xpression type: closure (there is no java class for that type (yet?).
 	 * currently the body of the closure is stored in the content part of the
@@ -61,6 +64,9 @@ public class REXP {
 
 	/** xpression type: int[] to be interpreted as boolean */
 	public static final int XT_ARRAY_BOOL_INT = 37;
+	
+	/** xpression type: RComplexNumber[] */
+	public static final int XT_ARRAY_COMPLEX = 101;
 
 	/** xpression type: unknown; no assumptions can be made about the content */
 	public static final int XT_UNKNOWN = 48;
@@ -247,6 +253,16 @@ public class REXP {
 		} else if (rtype == SYMSXP) {
 			cont = re.rniGetSymbolName(xp);
 			Xt = XT_SYM;
+		} else if (rtype == CPLXSXP) {
+			RComplexNumber[] s = re.rniGetComplexNumberArray(xp);
+			if(s != null && s.length == 1) {
+				cont = s[0];
+				Xt = XT_COMPLEX;
+			}
+			else {
+				cont = s;
+				Xt = XT_ARRAY_COMPLEX;
+			}
 		} else
 			Xt = XT_NULL;
 		
@@ -538,6 +554,73 @@ public class REXP {
 		}
 		return null;
 	}
+	
+	/** get the expression as a single complex number.
+	 * @return a complex number if the expression is a complex number or the
+	 * first complex number if it is an array, null otherwise.
+	 */
+	public RComplexNumber asComplexNumber() {
+		if(Xt == XT_COMPLEX)
+			return (RComplexNumber)cont;
+		else if(Xt == XT_ARRAY_COMPLEX)
+			return ((RComplexNumber[])cont)[0];
+		return null;
+	}
+	
+	/** get the expression as a complex number array.
+	 * @return a complex number array if the expression is an array or a length
+	 * 1 array if the expression is a single complex number, null otherwise.
+	 */
+	public RComplexNumber[] asComplexNumberArray() {
+		if(Xt == XT_ARRAY_COMPLEX)
+			return (RComplexNumber[])cont;
+		else if(Xt == XT_COMPLEX) {
+			RComplexNumber[] n = new RComplexNumber[1];
+			n[0] = asComplexNumber();
+			return n;
+		}
+		return null;
+	}
+	
+	/** get the expression as a complex number matrix. Because of how R deals
+	 * with expressions, a matrix is simply an array with an extra attribute
+	 * that determines the matrix's dimensions. Therefore, the expression needs
+	 * to be of type complex array for this method to return a valid matrix and
+	 * not null (@see isComplexNumberArray()).
+	 * @return a matrix of complex numbers if the expression is a valid matrix,
+	 * null otherwise.
+	 */
+	public RComplexNumber[][] asComplexNumberMatrix() {
+		if(Xt != XT_ARRAY_COMPLEX)
+			return null;
+		
+		REXP dim = getAttribute("dim");
+		if (dim == null || dim.Xt != XT_ARRAY_INT)
+			return null;
+		
+		int[] ds = dim.asIntArray();
+		if (ds == null || ds.length != 2)
+			return null;
+		
+		int rowCount = ds[0], colCount = ds[1];
+		int row = 0, col = 0;
+		
+		RComplexNumber[] array = asComplexNumberArray();
+		RComplexNumber[][] matrix = new RComplexNumber[rowCount][colCount];
+		int k = 0;
+		
+		while(col < colCount) {
+			row = 0;
+			while(row < rowCount) {
+				matrix[row][col] = array[k];
+				k++;
+				row++;
+			}
+			col++;
+		}
+		
+		return matrix;
+	}
 
 	/**
 	 * get content of the REXP as an array of integers. Unlike
@@ -601,6 +684,19 @@ public class REXP {
 	/** this is just an alias for {@link #asDoubleMatrix()}. */
 	public double[][] asMatrix() {
 		return asDoubleMatrix();
+	}
+	
+	/** checks if the number is complex.
+	 * @return true if the expression is a complex number or an array of complex
+	 * numbers, false otherwise.
+	 */
+	public boolean isComplexNumber() {
+		return Xt == XT_COMPLEX || Xt == XT_ARRAY_COMPLEX;
+	}
+	
+	/** checks if the number is an array of complex numbers. */
+	public boolean isComplexNumberArray() {
+		return Xt == XT_ARRAY_COMPLEX;
 	}
 
 	/**
@@ -714,6 +810,21 @@ public class REXP {
 			sb.append(l.body); 
 			sb.append(")");
 		}
+		
+		if (Xt == XT_COMPLEX)
+			sb.append(cont.toString());
+		
+		if(Xt == XT_ARRAY_COMPLEX) {
+			RComplexNumber[] c = (RComplexNumber[])cont;
+			sb.append("(");
+			
+			for(int i = 0; i < c.length; i++) {
+				sb.append(c[i]);
+				if(i < (c.length - 1))
+					sb.append(", ");
+			}
+			sb.append(")");
+		}
 
 		if (Xt == XT_NONE) {
 			sb.append("{"+rtype+"}");
@@ -757,6 +868,9 @@ public class REXP {
 		if (xt==XT_FACTOR) return "FACTOR";
 		if (xt==XT_UNKNOWN) return "UNKNOWN";
 		if (xt==XT_NONE) return "(SEXP)";
+		if (xt==XT_COMPLEX) return "COMPLEX";
+		if (xt==XT_ARRAY_COMPLEX) return "COMPLEX*";
+		
 		return "<unknown "+xt+">";
-    }	
+	}	
 }

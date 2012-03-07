@@ -220,6 +220,9 @@ public class Rengine extends Thread {
 	@param exp reference to VECSXP
 	@return contents as an array of references or <code>null</code> if the reference is not VECSXP */
     public synchronized native long[] rniGetVector(long exp);
+    
+	/** RNI: get the contents of a raw complex number array */
+	public synchronized native RComplexNumber[] rniGetComplexNumberArray(long exp); 
 
     /** RNI: create a character vector of the length 1
 	@param s initial contents of the first entry

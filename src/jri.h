@@ -49,6 +49,8 @@ jarray jri_putSEXPLArray(JNIEnv *env, SEXP e); /* SEXPs are strored as "long"s *
 
 jstring jri_putSymbolName(JNIEnv *env, SEXP e);
 
+jobjectArray jri_putComplexNumberArray(JNIEnv *env, SEXP exp);
+
 void jri_checkExceptions(JNIEnv *env, int describe);
 
 void jri_error(char *fmt, ...);

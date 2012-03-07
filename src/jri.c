@@ -65,6 +65,29 @@ jstring jri_putString(JNIEnv *env, SEXP e, int ix) {
     return (TYPEOF(e) != STRSXP || LENGTH(e) <= ix || STRING_ELT(e, ix) == R_NaString) ? 0 : (*env)->NewStringUTF(env, CHAR_UTF8(STRING_ELT(e, ix)));
 }
 
+
+jobjectArray jri_putComplexNumberArray(JNIEnv *env, SEXP exp)
+{
+    if(TYPEOF(exp) != CPLXSXP)
+        return 0;
+    
+    int len = LENGTH(exp);
+    Rcomplex *current = COMPLEX(exp);
+    jclass cls = (*env)->FindClass(env, "org/rosuda/JRI/RComplexNumber");
+    jobjectArray nums = (*env)->NewObjectArray(env, len, cls, 0);
+    jmethodID constructor = (*env)->GetMethodID(env, cls, "<init>", "(DD)V");
+    
+    
+    for(int i = 0; i < len; i++)
+    {
+        jobject num = (*env)->NewObject(env, cls, constructor, current->i, current->r);
+        (*env)->SetObjectArrayElement(env, nums, i, num);
+        current++;
+    }
+    
+    return nums;
+}
+
 jarray jri_putStringArray(JNIEnv *env, SEXP e)
 {
     if (TYPEOF(e) != STRSXP) return 0;
